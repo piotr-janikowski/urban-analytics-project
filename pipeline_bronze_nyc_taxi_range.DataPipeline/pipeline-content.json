@@ -1,0 +1,359 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "IfCondition",
+        "typeProperties": {
+          "expression": {
+            "value": "@and(\n    and(\n        greaterOrEquals(pipeline().parameters.start_month, 1),\n        lessOrEquals(pipeline().parameters.start_month, 12)\n    ),\n    and(\n        greaterOrEquals(pipeline().parameters.end_month, 1),\n        lessOrEquals(pipeline().parameters.end_month, 12)\n    )\n)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [],
+          "ifFalseActivities": [
+            {
+              "type": "Fail",
+              "typeProperties": {
+                "message": {
+                  "value": "@concat(\n    'Invalid month value. start_month: ',\n    string(pipeline().parameters.start_month),\n    ', end_month: ',\n    string(pipeline().parameters.end_month),\n    '.',\n    decodeUriComponent('%0A'),\n    'Required: 1 <= start_month <= 12 and 1 <= end_month <= 12.'\n)",
+                  "type": "Expression"
+                },
+                "errorCode": "InvalidMonthRangeError"
+              },
+              "name": "invalid_month",
+              "description": "Communicate to the user that provided start_moth, end_moth is invalid.\nShows correct values.",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "validate_months",
+        "description": "Checks if the provided start_month and end_month is valid to retrieve data ",
+        "dependsOn": [
+          {
+            "activity": "validate_years",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "IfCondition",
+        "typeProperties": {
+          "expression": {
+            "value": "@and(\n    and(\n        greaterOrEquals(\n            pipeline().parameters.start_year, \n            2000\n        ),\n        lessOrEquals(\n            pipeline().parameters.start_year, \n            int(formatDateTime(utcNow(), 'yyyy'))\n        )\n    ),\n    and(\n        greaterOrEquals(\n            pipeline().parameters.end_year, \n            2000\n        ),\n        lessOrEquals(\n            pipeline().parameters.end_year, \n            int(formatDateTime(utcNow(), 'yyyy'))\n        )\n    )\n)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [],
+          "ifFalseActivities": [
+            {
+              "type": "Fail",
+              "typeProperties": {
+                "message": {
+                  "value": "@concat(\n    'Invalid year value. start_year: ',\n    string(pipeline().parameters.start_year),\n    ', end_year: ',\n    string(pipeline().parameters.end_year),\n    '.',\n    decodeUriComponent('%0A'),\n    'Required: 2009 <= start_year <= ', formatDateTime(utcNow(), 'yyyy'), ' and 2009 <= end_month <= ', formatDateTime(utcNow(), 'yyyy')\n)",
+                  "type": "Expression"
+                },
+                "errorCode": "InvalidYearRangeError"
+              },
+              "name": "invalid_years",
+              "description": "Communicate to the user that provided start_year, end_year is invalid.\nShows correct values.",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "validate_years",
+        "description": "Checks if the provided start_year and end_year is valid to retrieve data ",
+        "dependsOn": []
+      },
+      {
+        "type": "IfCondition",
+        "typeProperties": {
+          "expression": {
+            "value": "@lessOrEquals(\n    add(\n        mul(pipeline().parameters.start_year, 100),\n        pipeline().parameters.start_month\n    ),\n    add(\n        mul(pipeline().parameters.end_year, 100),\n        pipeline().parameters.end_month\n    )\n)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [],
+          "ifFalseActivities": [
+            {
+              "type": "Fail",
+              "typeProperties": {
+                "message": {
+                  "value": "@concat(\n    'Invalid date range. Start: ',\n    string(pipeline().parameters.start_year),\n    '-',\n    string(pipeline().parameters.start_month),\n    ', end: ',\n    string(pipeline().parameters.end_year),\n    '-',\n    string(pipeline().parameters.end_month),\n    '.',\n    decodeUriComponent('%0A'),\n    'Required: start date must be earlier than or equal to end date.'\n)",
+                  "type": "Expression"
+                },
+                "errorCode": "InvalidDateRangeError"
+              },
+              "name": "invalid_date_range",
+              "description": "Communicate to the user that provided date is not correct.",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "validate_date_range",
+        "description": "Checks if the provided date is valid to retrieve data ",
+        "dependsOn": [
+          {
+            "activity": "validate_months",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "LakehouseTableSource"
+          },
+          "datasetSettings": {
+            "type": "LakehouseTable",
+            "typeProperties": {
+              "schema": "dbo",
+              "table": "cfg_nyc_taxi_types"
+            },
+            "schema": [],
+            "linkedService": {
+              "name": "lakehouse_urban_analytics",
+              "properties": {
+                "type": "Lakehouse",
+                "typeProperties": {
+                  "artifactId": "f50a55bb-b81e-a8ff-4d23-25ebc08039f2",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000",
+                  "rootFolder": "Tables"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "lookup_taxi_types_config",
+        "description": "Check, if values from 'cfg_nyc_taxi_types' table match users input values.",
+        "dependsOn": [
+          {
+            "activity": "notebook_refresh_nyc_taxi_availability",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Filter",
+        "typeProperties": {
+          "items": {
+            "value": "@activity('lookup_taxi_types_config').output.value",
+            "type": "Expression"
+          },
+          "condition": {
+            "value": "@and(\n    contains(\n        pipeline().parameters.taxi_types,\n        item().taxi_type\n    ),\n    equals(item().is_active, true)\n)",
+            "type": "Expression"
+          }
+        },
+        "name": "filter_taxi_type_config",
+        "dependsOn": [
+          {
+            "activity": "lookup_taxi_types_config",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "IfCondition",
+        "typeProperties": {
+          "expression": {
+            "value": "@and(\n    greater(\n        length(pipeline().parameters.taxi_types),\n        0\n    ),\n    equals(\n        activity('filter_taxi_type_config').output.FilteredItemsCount,\n        length(pipeline().parameters.taxi_types)\n    )\n)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [],
+          "ifFalseActivities": [
+            {
+              "type": "Fail",
+              "typeProperties": {
+                "message": {
+                  "value": "@concat(\n    'Invalid taxi_types configuration. Selected types: ',\n    string(length(pipeline().parameters.taxi_types)),\n    '. Matching active records: ',\n    string(activity('filter_taxi_type_config').output.FilteredItemsCount),\n    '. Check cfg_nyc_taxi_types and selected taxi_types.'\n)",
+                  "type": "Expression"
+                },
+                "errorCode": "InvalidTaxiTypeConfigurationError"
+              },
+              "name": "invalid_taxi_type_config",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "validate_taxi_type_config_match",
+        "description": "Check if config table exists and is correct",
+        "dependsOn": [
+          {
+            "activity": "filter_taxi_type_config",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "c37dbe74-3685-b135-4b46-351cc136e70a",
+          "workspaceId": "00000000-0000-0000-0000-000000000000"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "notebook_refresh_nyc_taxi_availability",
+        "description": "Check max_year, max_month and returns it to pipeline",
+        "dependsOn": [
+          {
+            "activity": "validate_date_range",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "ffe5b049-d903-8be3-4f5c-10d1cae55435",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "taxi_config_json": {
+              "value": {
+                "value": "@string(activity('filter_taxi_type_config').output.Value)",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "requested_start_key": {
+              "value": {
+                "value": "@add(mul(pipeline().parameters.start_year, 100), pipeline().parameters.start_month)",
+                "type": "Expression"
+              },
+              "type": "int"
+            },
+            "requested_end_key": {
+              "value": {
+                "value": "@add(mul(pipeline().parameters.end_year, 100), pipeline().parameters.end_month)",
+                "type": "Expression"
+              },
+              "type": "int"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "notebook_generate_nyc_taxi_months",
+        "description": "For every JSON record (every available month) run pipeline_bronze_nyc_taxi",
+        "dependsOn": [
+          {
+            "activity": "validate_taxi_type_config_match",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "batchCount": 4,
+          "items": {
+            "value": "@json(activity('notebook_generate_nyc_taxi_months').output.result.exitValue).available",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "year": {
+                    "value": "@string(item().year)",
+                    "type": "Expression"
+                  },
+                  "month": {
+                    "value": "@item().month",
+                    "type": "Expression"
+                  },
+                  "taxi_type": {
+                    "value": "@item().taxi_type",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "3759fff3-b791-927b-451a-889dae2e1118",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "10a6378e-9c29-4947-b48f-0263a1be957b"
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "invoke_pipeline_bronze_nyc_taxi",
+              "description": "Execute pipeline_bronze_nyc_taxi.",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "foreach_available_months",
+        "dependsOn": [
+          {
+            "activity": "notebook_generate_nyc_taxi_months",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "start_year": {
+        "type": "int",
+        "defaultValue": 2007
+      },
+      "start_month": {
+        "type": "int",
+        "defaultValue": 1
+      },
+      "end_year": {
+        "type": "int",
+        "defaultValue": 2026
+      },
+      "end_month": {
+        "type": "int",
+        "defaultValue": 12
+      },
+      "taxi_types": {
+        "type": "array",
+        "defaultValue": [
+          "yellow"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "notebook_generate_nyc_taxi_months"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "ffe5b049-d903-8be3-4f5c-10d1cae55435"
+  }
+}

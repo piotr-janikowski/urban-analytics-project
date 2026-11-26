@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "notebook_refresh_nyc_taxi_availability",
+    "description": "This notebook contains a script for checking the latest available data on NYC TLC site. Then it updates max_month, max_year and max_data_key in the cfg_nyc_taxi_types table."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "c37dbe74-3685-b135-4b46-351cc136e70a"
+  }
+}

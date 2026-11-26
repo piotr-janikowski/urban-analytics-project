@@ -1,0 +1,75 @@
+{
+  "formatVersion": "202502",
+  "computeEngineSettings": {
+    "allowModernEvaluationEngine": true
+  },
+  "name": "df_bronze_openaq",
+  "queryGroups": [],
+  "documentLocale": "en-US",
+  "queriesMetadata": {
+    "DefaultDestination": {
+      "queryId": "67ef49ad-f396-4a33-a428-50de661294bf",
+      "queryName": "DefaultDestination",
+      "isHidden": true,
+      "loadEnabled": false
+    },
+    "openaq_hourly_measurements_test": {
+      "queryId": "a12f4a80-a3dc-441d-ac63-1f4f4cda7f3a",
+      "queryName": "openaq_hourly_measurements_test",
+      "loadEnabled": false
+    },
+    "openaq_locations": {
+      "queryId": "4506960d-43f1-48ad-87ca-2489aa978dee",
+      "queryName": "openaq_locations",
+      "loadEnabled": false
+    },
+    "openaq_sensor_test": {
+      "queryId": "3b16421b-8880-40a5-b882-968136b667bd",
+      "queryName": "openaq_sensor_test",
+      "loadEnabled": false
+    },
+    "openaq_sensors": {
+      "queryId": "86d08af3-f610-43db-a624-d852829981cf",
+      "queryName": "openaq_sensors",
+      "loadEnabled": false
+    },
+    "p_openaq_api_key": {
+      "queryId": "d253cc6c-8084-4709-91c6-572010896c1f",
+      "queryName": "p_openaq_api_key",
+      "loadEnabled": false
+    },
+    "p_openaq_end_date": {
+      "queryId": "36f4878a-bdba-4b31-b49b-a7c328afe8c9",
+      "queryName": "p_openaq_end_date",
+      "loadEnabled": false
+    },
+    "p_openaq_start_date": {
+      "queryId": "6458ed90-217e-4fc0-85f6-8f670dd2e0ef",
+      "queryName": "p_openaq_start_date",
+      "loadEnabled": false
+    },
+    "q_locations_source": {
+      "queryId": "4ac2da01-1b4f-4517-99dc-96d9d17f3583",
+      "queryName": "q_locations_source",
+      "loadEnabled": false
+    }
+  },
+  "connections": [
+    {
+      "path": "Lakehouse",
+      "kind": "Lakehouse",
+      "connectionId": "{\"ClusterId\":\"7e279801-8db6-4553-bf7d-13b276a7c53d\",\"DatasourceId\":\"6be75e95-48c7-4107-848a-d00807bf28d5\"}"
+    },
+    {
+      "path": "https://www.bing.com/",
+      "kind": "Web",
+      "connectionId": "{\"ClusterId\":\"7e279801-8db6-4553-bf7d-13b276a7c53d\",\"DatasourceId\":\"980e2e58-0b33-4595-b477-2562065be0e4\"}"
+    },
+    {
+      "path": "https://api.openaq.org/",
+      "kind": "Web",
+      "connectionId": "{\"ClusterId\":\"7e279801-8db6-4553-bf7d-13b276a7c53d\",\"DatasourceId\":\"47be3184-a068-4d31-bfee-760a27e38521\"}"
+    }
+  ],
+  "parametric": true
+}

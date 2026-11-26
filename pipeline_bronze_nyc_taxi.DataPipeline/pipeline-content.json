@@ -1,0 +1,171 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "GetMetadata",
+        "typeProperties": {
+          "datasetSettings": {
+            "type": "Binary",
+            "typeProperties": {
+              "location": {
+                "type": "LakehouseLocation",
+                "folderPath": {
+                  "value": "@concat(\n    'bronze/nyc_taxi/',\n    pipeline().parameters.taxi_type,\n    '/',\n    pipeline().parameters.year\n)",
+                  "type": "Expression"
+                },
+                "fileName": {
+                  "value": "@concat(\n    pipeline().parameters.taxi_type,\n    '_tripdata_',\n    pipeline().parameters.year,\n    '-',\n    pipeline().parameters.month,\n    '.parquet'\n)",
+                  "type": "Expression"
+                }
+              }
+            },
+            "linkedService": {
+              "name": "lakehouse_urban_analytics",
+              "properties": {
+                "type": "Lakehouse",
+                "typeProperties": {
+                  "artifactId": "f50a55bb-b81e-a8ff-4d23-25ebc08039f2",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000",
+                  "rootFolder": "Files"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "fieldList": [
+            "exists"
+          ],
+          "storeSettings": {
+            "type": "LakehouseReadSettings",
+            "recursive": true,
+            "enablePartitionDiscovery": false
+          },
+          "formatSettings": {
+            "type": "BinaryReadSettings"
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "get_target_file_metadata",
+        "dependsOn": []
+      },
+      {
+        "type": "IfCondition",
+        "typeProperties": {
+          "expression": {
+            "value": "@equals(\n    activity('get_target_file_metadata').output.exists,\n    true\n)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [],
+          "ifFalseActivities": [
+            {
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "BinarySource",
+                  "formatSettings": {
+                    "type": "BinaryReadSettings"
+                  },
+                  "storeSettings": {
+                    "type": "HttpReadSettings",
+                    "requestMethod": "GET"
+                  },
+                  "datasetSettings": {
+                    "type": "Binary",
+                    "typeProperties": {
+                      "location": {
+                        "type": "HttpServerLocation",
+                        "relativeUrl": {
+                          "value": "@concat(\n    '/trip-data/',\n    pipeline().parameters.taxi_type,\n    '_tripdata_',\n    string(pipeline().parameters.year),\n    '-',\n    if(\n        equals(length(string(pipeline().parameters.month)), 1),\n        concat('0', string(pipeline().parameters.month)),\n        string(pipeline().parameters.month)\n    ),\n    '.parquet'\n)",
+                          "type": "Expression"
+                        }
+                      }
+                    },
+                    "externalReferences": {
+                      "connection": "bad5997c-6cbb-4d0a-8736-4cd42f05de0c"
+                    },
+                    "annotations": []
+                  }
+                },
+                "sink": {
+                  "type": "BinarySink",
+                  "storeSettings": {
+                    "type": "LakehouseWriteSettings"
+                  },
+                  "datasetSettings": {
+                    "type": "Binary",
+                    "typeProperties": {
+                      "location": {
+                        "type": "LakehouseLocation",
+                        "folderPath": {
+                          "value": "@concat(\n    'bronze/nyc_taxi/',\n    pipeline().parameters.taxi_type, \n    '/',\n    pipeline().parameters.year\n)",
+                          "type": "Expression"
+                        },
+                        "fileName": {
+                          "value": "@concat(\n    pipeline().parameters.taxi_type,\n    '_tripdata_',\n    string(pipeline().parameters.year),\n    '-',\n    if(\n        equals(length(string(pipeline().parameters.month)), 1),\n        concat('0', string(pipeline().parameters.month)),\n        string(pipeline().parameters.month)\n    ),\n    '.parquet'\n)",
+                          "type": "Expression"
+                        }
+                      }
+                    },
+                    "linkedService": {
+                      "name": "lakehouse_urban_analytics",
+                      "properties": {
+                        "type": "Lakehouse",
+                        "typeProperties": {
+                          "artifactId": "f50a55bb-b81e-a8ff-4d23-25ebc08039f2",
+                          "workspaceId": "00000000-0000-0000-0000-000000000000",
+                          "rootFolder": "Files"
+                        },
+                        "annotations": []
+                      }
+                    },
+                    "annotations": []
+                  }
+                },
+                "enableStaging": false
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 2,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "copy_nyc_taxi_to_bronze",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "check_existing_file",
+        "dependsOn": [
+          {
+            "activity": "get_target_file_metadata",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "year": {
+        "type": "string",
+        "defaultValue": "2025"
+      },
+      "month": {
+        "type": "string",
+        "defaultValue": "06"
+      },
+      "taxi_type": {
+        "type": "string",
+        "defaultValue": "yellow"
+      }
+    }
+  }
+}
